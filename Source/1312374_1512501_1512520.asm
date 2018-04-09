@@ -2,12 +2,14 @@
 	buffer:		.space 400
 	length:		.word 0
 	array:		.space 400
+	array_new:	.space 400
 	n:		.word 0
 	n_prime:	.word 0
 	n_perfect:	.word 0
 	sum_square:	.word 0
 	average_symmetry: .word 0
 	max:		.word 0
+	hasInput:	.word 0
 	s_newLine:	.asciiz "\n"
 	s_space:	.asciiz " "
 	s_menu:		.asciiz "========MENU========\n1. Nhap mang\n2. Xuat mang\n3. Liet ke so nguyen to\n4. Liet ke so hoan thien\n5. Tong cac so chinh phuong\n6. Trung binh cong cac so doi xung\n7. Gia tri lon nhat\n8. Sap xep mang tang dan (selection soft)\n9. Sap xep mang giam dan (bubble soft)\n10. Thoat\n==============\n"
@@ -58,7 +60,12 @@ m_input:
 	
 	# quit if 'select' = 10; else jump to 'selectAgain:'
 	beq	$t0,	1,	function_1
+	
+	lw	$t1,	hasInput		# if select != 1 and no Input array => end program
+	beq	$t1,	$zero,	m_end
+	
 	beq	$t0,	2,	function_2
+	beq	$t0,	3,	function_3
 	beq	$t0,	10,	m_end
 	beq	$t0,	11,	function_X	# testing
 	bne	$t0,	10,	m_selectAgain	# use when select < 1 or select > 10
@@ -103,6 +110,10 @@ function_1:
 	la	$s0,	array
 	jal	string_Array
 	
+	# set hasInput = 1
+	li	$t4,	1
+	sw	$t4,	hasInput
+	
 	# jump back to selection in menu
 	j	m_select
 	
@@ -124,8 +135,8 @@ string_Array:
 	
 # while not end of string
 checkEoS:
-	bne	$t1, $s5, checkChar	# while i < strlen() => check character
-	sb	$s6, n			# if (EoS) => save array length to 'n'
+	bne	$t1,	$s5,	checkChar	# while i < strlen() => check character
+	sb	$s6,	n			# if (EoS) => save array length to 'n'
 	jr	$ra
 
 # check each character ($s2) in string	
@@ -141,21 +152,21 @@ checkChar:
 # convert character ($s2) to number ($s3)
 char_Number:
 	#tinh gia tri cua so tu dang chuoi ky tu
-	sub	$s2, $s2, 48		# ch = ch - '0'
-	li	$t3, 10
-	mult	$s3, $t3		# tmp = tmp * 10
+	sub	$s2,	$s2,	48		# ch = ch - '0'
+	li	$t3,	10
+	mult	$s3,	$t3			# tmp = tmp * 10
 	mflo	$s3	
-	addu	$s3, $s3, $s2		# tmp = tmp + ch
-	addu	$t1, $t1, 1		# i++
+	addu	$s3,	$s3,	$s2		# tmp = tmp + ch
+	addu	$t1,	$t1,	1		# i++
 	j	checkEoS
 
 # push the new number ($3) into array ($s0)
 push_Array:		
-	sw	$s3, ($s0)		# array[j] = tmp
-	li	$s3, 0			# tmp = 0
-	addu	$s0, $s0, 4
-	addu	$s6, $s6, 1		# n++
-	addu	$t1, $t1, 1		# j++
+	sw	$s3,	($s0)			# array[j] = tmp
+	li	$s3,	0			# tmp = 0
+	addu	$s0,	$s0,	4
+	addu	$s6,	$s6,	1		# n++
+	addu	$t1,	$t1,	1		# j++
 	j	checkEoS
 # ===End of Function 1===
 
@@ -168,8 +179,8 @@ function_2:
 	syscall
 	
 	# load array and length
-	la 	$s0, array
-	lw	$s6, n
+	la 	$s0,	array
+	lw	$s6,	n
 	jal	printArray
 	
 	# jump back to selection in menu
@@ -178,33 +189,113 @@ function_2:
 
 
 # ===Print Array (for functions 2, 3, 4, 8, 9)===	
-printArray:				# array store in $s0, array length in $s6
-	li 	$t0, 0			# i = 0
+printArray:	# array store in $s0, array length in $s6
+	li 	$t0,	0			# i = 0
 	j 	checkEoA
 
 # while not end of array
 checkEoA:
-	bne 	$t0, $s6, printNumber	# if (i < n) =>
+	bne 	$t0,	$s6,	printNumber	# if (i < n) =>
 	
 	# insert a new line
-	li	$v0, 4
-	la	$a0, s_newLine
+	li	$v0,	4
+	la	$a0,	s_newLine
 	syscall
 
-	jr 	$ra			# return to 'function_2'
+	jr 	$ra				# return to function (2, 3, 4, 8, 9)
 
 printNumber:
 	# print a[i]
-	li 	$v0, 1
-	lw 	$a0, ($s0)
+	li 	$v0,	1
+	lw 	$a0,	($s0)
 	syscall
 
 	# insert 'space'
-	li $v0, 11
-	li $a0, ' '
+	li	$v0,	11
+	li	$a0,	' '
 	syscall
 	
-	# increase array's adress by 4
-	addu	$s0, $s0, 4
-	addu	$t0, $t0, 1
-	j checkEoA
+	# i++
+	addu	$s0,	$s0,	4
+	addu	$t0,	$t0,	1
+	j	checkEoA
+# ===End of Print Array===
+
+
+# ===Function 3===
+function_3:
+	# print 's_result3' to console
+	li	$v0,	4
+	la	$a0,	s_result3
+	syscall
+	
+	# load array and length to build prime array
+	la 	$s0,	array
+	lw	$s6,	n
+	jal	buildPrimeArray
+	
+	# load prime array and length to print to console
+	la 	$s0,	array_new
+	lw	$s6,	n_prime
+	jal	printArray
+	
+	# clear value
+	add	$s0,	$zero,	$zero
+	add	$s6,	$zero,	$zero
+	
+	j	m_select
+# ===End of Function 3===
+
+
+# ===build prime number array===
+buildPrimeArray:
+	la	$s1,	array_new
+	li	$s7,	0			# n_prime = 0
+	li	$t0,	0			# i = 0
+	j	scanArray
+	
+scanArray:
+	bne	$t0,	$s6,	checkPrime	# while (i < n) => checkPrime
+	sw	$s7,	n_prime			# save 'n_prime'
+	jr	$ra				# jump back to 'function_3'
+	
+checkPrime:
+	lw	$s2,	($s0)			# x = a[i]
+	beq	$s2,	$zero,	nextNumber	# if (x == 0)
+	li	$t7,	1
+	beq	$s2,	$t7,	nextNumber	# if (x == 1)
+	li	$t7,	2
+	beq	$s2,	$t7,	push_PrimeA	# if (x == 2)
+	li	$t7,	3
+	beq	$s2,	$t7,	push_PrimeA	# if (x == 3)
+	j	findDivisor			# if (x >= 4)
+
+# find all divisors of a[i]
+findDivisor:
+	li	$t1,	2			# j = 2		
+	div	$s2,	$t1
+	mflo	$t3				# y = x / 2
+	addu	$t3,	$t3,	1		# y = y + 1
+
+X:
+	bne	$t1,	$t3,	loopCheck	# while (j < [x / 2])
+	j	push_PrimeA
+	
+loopCheck:
+	div	$s2,	$t1
+	mfhi	$t5				# t5 = x mod j
+	beq	$t5,	$zero,	nextNumber	# if (t5 == 0) => not prime number
+	addu	$t1,	$t1,	1		# j++
+	j	X
+
+nextNumber:
+	addu	$s0,	$s0,	4
+	addu	$t0,	$t0,	1		# i++
+	j	scanArray
+	
+push_PrimeA:		
+	sw	$s2,	($s1)			# array_new[n_prime] = x
+	addu	$s1,	$s1,	4
+	addu	$s7,	$s7,	1		# n_prime++
+	j	nextNumber
+# ===End of function===
