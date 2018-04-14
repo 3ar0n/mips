@@ -66,6 +66,7 @@ main.Input:
 	
 	beq	$t0,	2,	function_2
 	beq	$t0,	3,	function_3
+	beq	$t0,	4,	function_4
 	beq	$t0,	7,	function_7
 	beq	$t0,	10,	main.End
 	bne	$t0,	10,	main.SelectAgain	# use when select < 1 or select > 10
@@ -180,7 +181,7 @@ function_2:
 	
 	# load array and length
 	la 	$s0,	array
-	lw	$s6,	n
+	lw	$s1,	n
 	jal	array.Print
 	
 	# jump back to selection in menu
@@ -195,13 +196,14 @@ array.Print:	# array store in $s0, array length in $s6
 
 # while not end of array
 checkEoA:
-	bne 	$t0,	$s6,	printNumber	# if (i < n) =>
+	blez	$s6,	return			# if (n <= 0)
+	bne 	$t0,	$s6,	printNumber	# if (i < n)
 	
+return:
 	# insert a new line
 	li	$v0,	4
 	la	$a0,	s_newLine
 	syscall
-
 	jr 	$ra				# return to function (2, 3, 4, 8, 9)
 
 printNumber:
@@ -301,6 +303,91 @@ primeArray.Add:
 # ===End of function===
 
 
+# ===Function 4===
+function_4:
+	# print 's_result7' to console
+	li	$v0,	4
+	la	$a0,	s_result4
+	syscall
+	
+	# load array and length to build prime array
+	la 	$s0,	array
+	lw	$s6,	n
+	jal	perfectArray.Build
+	
+	# load prime array and length to print to console
+	la 	$s0,	array_new
+	lw	$s6,	n_perfect
+	jal	array.Print
+	
+	# clear value
+	add	$s0,	$zero,	$zero
+	add	$s6,	$zero,	$zero
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of function 4===
+
+
+# ===Build perfect number array===
+perfectArray.Build:
+	la	$s1,	array_new
+	li	$s7,	0				# n_perfect = 0
+	move	$s2,	$ra				# backup $ra
+	li	$s4,	0				# i = 0	
+	j	perfectArray.Scan
+
+perfectArray.Scan:
+	bne	$s4,	$s6,	perfectArray.Check	# while (i < n) => primeArray.Check
+	sw	$s7,	n_perfect			# save 'n_prime'
+	jr	$s2					# jump back to 'function_4'	
+
+perfectArray.Check:
+	lw	$a0,	($s0)				# x = a[i]
+	move	$s3,	$a0
+	jal	isPerfect
+	beq	$v0,	1,	perfectArray.Add	# if (isPerfect) then add to array
+	j	perfectArray.Next			# else next number
+	
+perfectArray.Next:
+	addu	$s0,	$s0,	4
+	addu	$s4,	$s4,	1			# i++
+	j	perfectArray.Scan
+	
+perfectArray.Add:		
+	sw	$s3,	($s1)				# array_new[n_perfect] = x
+	addu	$s1,	$s1,	4
+	addu	$s7,	$s7,	1			# n_prime++
+	j	perfectArray.Next
+
+#======= Ham KTHT ==================
+isPerfect:
+	li	$t0,	0			# S = 0
+	li	$t1,	1			# i = 1
+isPerfect.Loop:
+	sub	$t2,	$t1,	$a0 		# tmp = i - n
+	bltz	$t2,	isPerfect.checkDivisor 	# if (tmp < 0)  // if (i < n)
+	j	isPerfect.Compare
+isPerfect.checkDivisor:				# check if 'i' is a divisor of 'x'
+	div	$a0,	$t1  
+	mfhi	$t4 				# mod = n % i
+	beq	$t4,	0,	isPerfect.Sum 	# if mod == 0
+	j	isPerfect.Next
+isPerfect.Sum:
+	add	$t0,	$t0,	$t1		# S += i
+isPerfect.Next:
+	addi	$t1,	$t1,	1		# i++
+	j	isPerfect.Loop
+isPerfect.Compare:
+	beq	$t0,	$a0,	isPerfect.True	# if S == x then return 1
+	li	$v0,	0			# else return 0
+	jr	$ra
+isPerfect.True:
+	li	$v0,	1
+	jr	$ra
+# ===End of function===
+
+
 # ===Function 7===
 function_7:
 	# print 's_result7' to console
@@ -329,27 +416,24 @@ function_7:
 	j	main.Select
 # ===End of Function 7===
 
+
 # ===Find max===
 max.Find:
 	li	$t0,	0			# int i = 0
-	lw	$v0,	($a0)			# int Max = a[0]
-	
+	lw	$v0,	($a0)			# int Max = a[0]	
 max.ScanArray:
 	lw	$t1,	($a0)			# x = a[i]
 	bne	$t0,	$a1,	max.Compare	# while (i < n)
 	add	$a0,	$zero,	$zero
 	add	$a1,	$zero,	$zero
 	jr	$ra				# jump back funstion_7
-
 max.Compare:
 	sub	$t3,	$t1,	$v0		# tmp = x - max
 	bgtz	$t3,	max.NewValue		# if (tmp > 0) { newMax }
-	j max.NextNumber			# else
-	
+	j max.NextNumber			# else	
 max.NewValue:
 	move	$v0,	$t1			# Max = x
-	j max.NextNumber
-	
+	j max.NextNumber	
 max.NextNumber:
 	addu	$a0,	$a0,	4
 	addu	$t0,	$t0,	1		# i++
