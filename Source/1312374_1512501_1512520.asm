@@ -7,7 +7,7 @@
 	n_prime:	.word 0
 	n_perfect:	.word 0
 	sum_square:	.word 0
-	average_symmetry: .word 0
+	avg_symmetry:	.word 0
 	max:		.word 0
 	hasInput:	.word 0
 	s_newLine:	.asciiz "\n"
@@ -35,21 +35,21 @@ main:
 	la	$a0,	s_menu
 	syscall
 
-m_select:	
-	# print 's_select' to console, then jump to 'm_input:'
+main.Select:	
+	# print 's_select' to console, then jump to 'main.Input:'
 	li	$v0,	4
 	la	$a0,	s_select
 	syscall
-	j	m_input
+	j	main.Input
 	
-m_selectAgain:
-	# print 's_selectAgain' to console, then jump to 'm_input:'
+main.SelectAgain:
+	# print 's_selectAgain' to console, then jump to 'main.Input:'
 	li	$v0,	4
 	la	$a0,	s_selectAgain
 	syscall
-	j	m_input
+	j	main.Input
 	
-m_input:	
+main.Input:	
 	# input number and save it to 'select'
 	li	$v0,	5
 	syscall
@@ -62,17 +62,17 @@ m_input:
 	beq	$t0,	1,	function_1
 	
 	lw	$t1,	hasInput		# if select != 1 and no Input array => end program
-	beq	$t1,	$zero,	m_end
+	beq	$t1,	$zero,	main.End
 	
 	beq	$t0,	2,	function_2
 	beq	$t0,	3,	function_3
-	beq	$t0,	10,	m_end
-	beq	$t0,	11,	function_X	# testing
-	bne	$t0,	10,	m_selectAgain	# use when select < 1 or select > 10
+	beq	$t0,	7,	function_7
+	beq	$t0,	10,	main.End
+	bne	$t0,	10,	main.SelectAgain	# use when select < 1 or select > 10
 	# add funtion base on 
 	
 # end program
-m_end:
+main.End:
 	li	$v0,	10
 	syscall
 	
@@ -85,7 +85,7 @@ function_X:
 	syscall
 	
 	# jump back to selection in menu
-	j	m_select
+	j	main.Select
 
 # =======Function 1======
 function_1:
@@ -100,33 +100,33 @@ function_1:
 	li	$a1,	399
 	syscall
 	
-	# number of character ($7) in string ($0), then save it to 'length'
-	la	$s0,	buffer
-	li	$s7,	0
-	jal	stringLen
-	sw	$s7,	length
+	# call string.Length(buffer, &lenght) 
+	la	$a0,	buffer
+	li	$a1,	0
+	jal	string.Length
+	sw	$a1,	length
 	
 	# convert string (buffer) to array ($s0)
 	la	$s0,	array
-	jal	string_Array
+	jal	string.ConvertToArray
 	
 	# set hasInput = 1
 	li	$t4,	1
 	sw	$t4,	hasInput
 	
 	# jump back to selection in menu
-	j	m_select
+	j	main.Select
 	
-# Length of string ($s0)
-stringLen:
-	lb      $t0,	($s0)			# char ch = buffer[k]
-	addu	$s0,	$s0,	1
-	addu	$s7,	$s7,	1		# k++
-	bne     $t0,	10,	stringLen	# while (ch != '\n') { strLen() }
-	jr	$ra
+# Length of string
+string.Length:
+	lb      $t0,	($a0)			# char ch = buffer[k]
+	addu	$a0,	$a0,	1
+	addu	$a1,	$a1,	1		# k++
+	bne     $t0,	10,	string.Length	# loop while (ch != '\n')
+	jr	$ra				# else return
 	
 # Convert string to array
-string_Array:
+string.ConvertToArray:
 	lw	$s5,	length		# get string length
 	li	$s6,	0		# array length = 0
 	li	$s7,	0		# tmp = 0
@@ -181,15 +181,15 @@ function_2:
 	# load array and length
 	la 	$s0,	array
 	lw	$s6,	n
-	jal	printArray
+	jal	array.Print
 	
 	# jump back to selection in menu
-	j	m_select
+	j	main.Select
 # ===End of Function 2===
 
 
 # ===Print Array (for functions 2, 3, 4, 8, 9)===	
-printArray:	# array store in $s0, array length in $s6
+array.Print:	# array store in $s0, array length in $s6
 	li 	$t0,	0			# i = 0
 	j 	checkEoA
 
@@ -232,42 +232,42 @@ function_3:
 	# load array and length to build prime array
 	la 	$s0,	array
 	lw	$s6,	n
-	jal	buildPrimeArray
+	jal	primeArray.Build
 	
 	# load prime array and length to print to console
 	la 	$s0,	array_new
 	lw	$s6,	n_prime
-	jal	printArray
+	jal	array.Print
 	
 	# clear value
 	add	$s0,	$zero,	$zero
 	add	$s6,	$zero,	$zero
 	
-	j	m_select
+	j	main.Select
 # ===End of Function 3===
 
 
 # ===build prime number array===
-buildPrimeArray:
+primeArray.Build:
 	la	$s1,	array_new
 	li	$s7,	0			# n_prime = 0
 	li	$t0,	0			# i = 0
-	j	scanArray
+	j	primeArray.Scan
 	
-scanArray:
-	bne	$t0,	$s6,	checkPrime	# while (i < n) => checkPrime
+primeArray.Scan:
+	bne	$t0,	$s6,	primeArray.Check	# while (i < n) => primeArray.Check
 	sw	$s7,	n_prime			# save 'n_prime'
 	jr	$ra				# jump back to 'function_3'
 	
-checkPrime:
+primeArray.Check:
 	lw	$s2,	($s0)			# x = a[i]
 	beq	$s2,	$zero,	nextNumber	# if (x == 0)
 	li	$t7,	1
 	beq	$s2,	$t7,	nextNumber	# if (x == 1)
 	li	$t7,	2
-	beq	$s2,	$t7,	push_PrimeA	# if (x == 2)
+	beq	$s2,	$t7,	primeArray.Add	# if (x == 2)
 	li	$t7,	3
-	beq	$s2,	$t7,	push_PrimeA	# if (x == 3)
+	beq	$s2,	$t7,	primeArray.Add	# if (x == 3)
 	j	findDivisor			# if (x >= 4)
 
 # find all divisors of a[i]
@@ -279,7 +279,7 @@ findDivisor:
 
 X:
 	bne	$t1,	$t3,	loopCheck	# while (j < [x / 2])
-	j	push_PrimeA
+	j	primeArray.Add
 	
 loopCheck:
 	div	$s2,	$t1
@@ -291,11 +291,68 @@ loopCheck:
 nextNumber:
 	addu	$s0,	$s0,	4
 	addu	$t0,	$t0,	1		# i++
-	j	scanArray
+	j	primeArray.Scan
 	
-push_PrimeA:		
+primeArray.Add:		
 	sw	$s2,	($s1)			# array_new[n_prime] = x
 	addu	$s1,	$s1,	4
 	addu	$s7,	$s7,	1		# n_prime++
 	j	nextNumber
 # ===End of function===
+
+
+# ===Function 7===
+function_7:
+	# print 's_result7' to console
+	li	$v0,	4
+	la	$a0,	s_result7
+	syscall
+	
+	# load array and length
+	la 	$a0,	array
+	lw	$a1,	n
+	jal	max.Find
+	sw	$v0,	max
+	
+	# print 'max' to console
+	lw	$t2, max
+	li	$v0, 1
+	la	$a0, ($t2)
+	syscall
+	
+	# insert new line
+	li	$v0, 4
+	la	$a0, s_newLine
+	syscall
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of Function 7===
+
+# ===Find max===
+max.Find:
+	li	$t0,	0			# int i = 0
+	lw	$v0,	($a0)			# int Max = a[0]
+	
+max.ScanArray:
+	lw	$t1,	($a0)			# x = a[i]
+	bne	$t0,	$a1,	max.Compare	# while (i < n)
+	add	$a0,	$zero,	$zero
+	add	$a1,	$zero,	$zero
+	jr	$ra				# jump back funstion_7
+
+max.Compare:
+	sub	$t3,	$t1,	$v0		# tmp = x - max
+	bgtz	$t3,	max.NewValue		# if (tmp > 0) { newMax }
+	j max.NextNumber			# else
+	
+max.NewValue:
+	move	$v0,	$t1			# Max = x
+	j max.NextNumber
+	
+max.NextNumber:
+	addu	$a0,	$a0,	4
+	addu	$t0,	$t0,	1		# i++
+	j max.ScanArray
+# ===End of Find max===
+
