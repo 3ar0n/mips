@@ -68,6 +68,7 @@ main.Input:
 	beq	$t0,	3,	function_3
 	beq	$t0,	4,	function_4
 	beq	$t0,	5,	function_5
+	beq	$t0,	6,	function_6
 	beq	$t0,	7,	function_7
 	beq	$t0,	10,	main.End
 	bne	$t0,	10,	main.SelectAgain	# use when select < 1 or select > 10
@@ -108,6 +109,10 @@ function_1:
 	jal	string.Length
 	sw	$a1,	length
 	
+	# clear old array
+	la	$s0,	array
+	jal	array.Clear
+	
 	# convert string (buffer) to array ($s0)
 	la	$s0,	array
 	jal	string.ConvertToArray
@@ -118,6 +123,20 @@ function_1:
 	
 	# jump back to selection in menu
 	j	main.Select
+	
+# Clear data of the old array
+array.Clear:
+	li	$t0,	1				# i = 1
+	lw	$t1,	n
+array.CheckData:
+	sub	$t2,	$t0,	$t1			# t2 = i - n
+	blez	$t2,	array.LoadAndClear		# if (t2 <= 0) then
+	jr	$ra					# else return
+array.LoadAndClear:
+	sw	$zero,	($s0)				# a[i] = 0
+	add	$s0,	$s0,	4
+	add	$t0,	$t0,	1			# i++
+	j	array.CheckData
 	
 # Length of string
 string.Length:
@@ -133,14 +152,12 @@ string.ConvertToArray:
 	li	$s6,	0		# array length = 0
 	li	$s7,	0		# tmp = 0
 	li	$t1,	0		# i = 0
-	j	checkEoS
-	
+	j	checkEoS	
 # while not end of string
-checkEoS:
+checkEoS:	
 	bne	$t1,	$s5,	checkChar	# while i < strlen() => check character
 	sb	$s6,	n			# if (EoS) => save array length to 'n'
 	jr	$ra
-
 # check each character ($s2) in string	
 checkChar:
 	lb	$s2,	buffer($t1)		# char ch = buffer[i]
@@ -150,7 +167,6 @@ checkChar:
 	beq	$s2,	$t7,	push_Array
 	bne	$s2,	$t0,	char_Number	# while (ch != ' ')
 	jr	$ra				# return to 'function_1'
-
 # convert character ($s2) to number ($s3)
 char_Number:
 	#tinh gia tri cua so tu dang chuoi ky tu
@@ -161,7 +177,6 @@ char_Number:
 	addu	$s3,	$s3,	$s2		# tmp = tmp + ch
 	addu	$t1,	$t1,	1		# i++
 	j	checkEoS
-
 # push the new number ($3) into array ($s0)
 push_Array:		
 	sw	$s3,	($s0)			# array[j] = tmp
@@ -468,6 +483,99 @@ isSquare.Return1:
 	li	$v0,	1
 	jr	$ra
 # ===End Function===
+
+
+# ===Function 6===
+function_6:
+	# print 's_result7' to console
+	li	$v0,	4
+	la	$a0,	s_result6
+	syscall
+	
+	# load array and length to build prime array
+	la 	$s0,	array
+	lw	$s6,	n
+	jal	symmetryArray.Sum
+	
+	move	$t0,	$zero
+	beq	$v1,	0,	continue	# if count == 0 then avg = 0
+	div	$v0,	$v1			# esle avg = Sum / count
+	mflo	$t0	
+	# print Sum
+continue:
+	sw	$t0,	avg_symmetry
+	li	$v0,	1
+	lw	$a0,	avg_symmetry
+	syscall
+	
+	# insert a new line
+	li	$v0,	4
+	la	$a0,	s_newLine
+	syscall
+	
+	# clear value
+	add	$s0,	$zero,	$zero
+	add	$s6,	$zero,	$zero
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of function 6===
+
+
+# ===$v0_Sum,$v1_count symmetryArray($s0_array, $s6_n)===
+symmetryArray.Sum:
+	move	$s2,	$ra				# backup $ra
+	li	$s1,	0				# Sum = 0
+	li	$s5,	0				# count = 0
+	li	$s4,	0				# i = 0	
+	j	symmetryArray.Scan
+
+symmetryArray.Scan:
+	bne	$s4,	$s6,	symmetryArray.Check	# while (i < n) then symmetryArray.Check
+	move	$v0,	$s1
+	move	$v1,	$s5
+	jr	$s2					# jump back to 'function_6'	
+
+symmetryArray.Check:
+	lw	$a0,	($s0)				# x = a[i]	
+	move	$a1,	$a0				# tmp = x
+	move	$s3,	$a0
+	jal	isSymmetry
+	beq	$v0,	1,	symmetryArray.Plus	# if (isSymmetry) then Sum += x
+	j	symmetryArray.Next			# else next number
+	
+symmetryArray.Next:
+	addu	$s0,	$s0,	4
+	addu	$s4,	$s4,	1			# i++
+	j	symmetryArray.Scan
+	
+symmetryArray.Plus:		
+	addu	$s1,	$s1,	$s3			# Sum += x
+	addu	$s5,	$s5,	1			# count++
+	j	symmetryArray.Next
+# ===End symmetryArray()===
+
+# ===$v0_check isSymmetry($a0_x, $a1_tmp)===
+isSymmetry:
+	li	$t0,	10
+	li	$t1,	0				# reverse = 0
+isSymmetry.Loop:
+	div	$a1,	$t0				
+	mfhi	$t2					# t2 = tmp % 10
+	mflo	$a1					# tmp = tmp / 10
+		
+	mult	$t1,	$t0
+	mflo	$t1					# reverse = reverse * 10
+	add	$t1,	$t1,	$t2			# reverse += t2
+	bne	$a1,	0,	isSymmetry.Loop		# while (tmp != 0)
+	
+	beq	$t1,	$a0,	isSymmetry.Return1	# if (reverse == x) then return 1
+	li	$v0,	0				# else return 0
+	jr	$ra
+isSymmetry.Return1:
+	li	$v0,	1
+	jr	$ra
+# ===End isSymmetry()===
 
 
 # ===Function 7===
