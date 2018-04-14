@@ -67,6 +67,7 @@ main.Input:
 	beq	$t0,	2,	function_2
 	beq	$t0,	3,	function_3
 	beq	$t0,	4,	function_4
+	beq	$t0,	5,	function_5
 	beq	$t0,	7,	function_7
 	beq	$t0,	10,	main.End
 	bne	$t0,	10,	main.SelectAgain	# use when select < 1 or select > 10
@@ -386,6 +387,87 @@ isPerfect.True:
 	li	$v0,	1
 	jr	$ra
 # ===End of function===
+
+
+# ===Function 5===
+function_5:
+	# print 's_result7' to console
+	li	$v0,	4
+	la	$a0,	s_result5
+	syscall
+	
+	# load array and length to build prime array
+	la 	$s0,	array
+	lw	$s6,	n
+	jal	squareArray.Sum
+	
+	# print Sum
+	li	$v0,	1
+	lw	$a0,	sum_square
+	syscall
+	
+	# insert a new line
+	li	$v0,	4
+	la	$a0,	s_newLine
+	syscall
+	
+	# clear value
+	add	$s0,	$zero,	$zero
+	add	$s6,	$zero,	$zero
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of function 5===
+
+# ===Sum===
+squareArray.Sum:
+	move	$s2,	$ra				# backup $ra
+	li	$s1,	0
+	li	$s4,	0				# i = 0	
+	j	squareArray.Scan
+
+squareArray.Scan:
+	bne	$s4,	$s6,	squareArray.Check	# while (i < n) then squareArray.Check
+	sw	$s1,	sum_square
+	jr	$s2					# jump back to 'function_4'	
+
+squareArray.Check:
+	lw	$a0,	($s0)				# x = a[i]
+	move	$s3,	$a0
+	jal	isSquare
+	beq	$v0,	1,	squareArray.Plus	# if (isSquare) then Sum += x
+	j	squareArray.Next			# else next number
+	
+squareArray.Next:
+	addu	$s0,	$s0,	4
+	addu	$s4,	$s4,	1			# i++
+	j	squareArray.Scan
+	
+squareArray.Plus:		
+	addu	$s1,	$s1,	$s3			# Sum += x
+	j	squareArray.Next
+# ===End===
+
+# ===is Square===
+isSquare:
+	li	$t0,	1			# i = 1
+isSquare.Loop:
+	mult	$t0,	$t0
+	mflo	$t1				# tmp = i * i
+	sub	$t2,	$a0,	$t1		# sub = x - tmp	
+	bgtz	$t2,	isSquare.iPlus		# if (sub > 0) then i++
+	bltz	$t2,	isSquare.Return0	# if (sub < 0) then return 0
+	j	isSquare.Return1		# else return 1
+isSquare.iPlus:
+	addi	$t0,	$t0,	1		# i++
+	j	isSquare.Loop
+isSquare.Return0:
+	li	$v0,	0
+	jr	$ra
+isSquare.Return1:
+	li	$v0,	1
+	jr	$ra
+# ===End Function===
 
 
 # ===Function 7===
