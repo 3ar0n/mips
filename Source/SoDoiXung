@@ -1,0 +1,116 @@
+.data
+	tb1: .asciiz "Nhap N: "
+	tb2: .asciiz "N la so doi xung."
+	tb3: .asciiz "N khong la so doi xung."
+	n: .word 0
+	muoi: .word 10
+	khong: .word 0
+.text
+	.globl main
+main:
+	#Xuat tb1
+	li $v0,4
+	la $a0,tb1
+	syscall
+
+	#Nhap n
+	li $v0,5
+	syscall
+
+	#Luu vao n
+	sw $v0,n
+
+	#truyen tham so
+	lw $a0,n
+	lw $a1,n
+	lw $s2,muoi
+	lw $s3,khong	
+
+	#Goi ham
+	jal _KTDX
+	
+	#Lay ket qua tra ve
+	move $t0,$v0
+	
+	#Kiem tra ket qua
+	beq $t0,1,LaDX
+KhongLaDX:
+	#Xuat tb3
+	li $v0,4
+	la $a0,tb3
+	syscall
+	
+	j KetThuc
+
+LaDX:
+	#Xuat tb2
+	li $v0,4
+	la $a0,tb2
+	syscall
+	
+KetThuc:
+	li $v0,10
+	syscall
+	
+
+#============== Ham ============
+
+#dau thu tuc
+_KTDX:
+	#Khai bao kich thuoc stack
+	addi $sp,$sp,-16
+	
+	#Backup thanh ghi
+	sw $ra,($sp)
+	sw $s0,4($sp)
+	sw $t0,8($sp)
+	sw $t1,12($sp)
+
+#Than thu tuc:
+	#khoi tao vong lap
+	li $s0,	0 # Dem = 0
+	li $t0, 1 # i = 1
+_KTDX.Lap:
+	#Chia lay phan du
+	div $a1,$s2
+	mfhi $s4
+	mflo $a1
+	
+	
+	#Tinh So Reverse
+	mult $s3,$s2
+	mflo $s3
+	add $s3,$s3,$s4
+	
+	j _KTDX.Tangi
+
+_KTDX.Tangi:
+	bne $a1,0,_KTDX.Lap
+	
+	#Kiem tra doi xung
+	beq $s3,$a0,_KTDX.Return1
+	#Return 0
+	li $v0,0
+	j _KTDX.KetThuc
+
+_KTDX.Return1:
+	li $v0,1
+
+_KTDX.KetThuc:
+	#Restor thanh ghi
+	lw $ra,($sp)
+	lw $s0,4($sp)
+	lw $t0,8($sp)
+	lw $t1,12($sp)
+
+	#Xoa stack
+	addi $sp,$sp,16
+
+	#Nhay ve dia chi goi ham
+	jr $ra
+	
+
+	
+	
+
+
