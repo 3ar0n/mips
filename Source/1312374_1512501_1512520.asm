@@ -25,7 +25,7 @@
 	s_result7:	.asciiz "Gia tri lon nhat: "
 	s_result8:	.asciiz "Sap xep mang tang dan: "
 	s_result9:	.asciiz "Sap xep mang giam dan: "
-	s_resultX:	.asciiz "Just for testing...\n"
+	s_resultX:	.asciiz "Error..."
 
 .text
 # ===================================MAIN===================================
@@ -70,6 +70,8 @@ main.Input:
 	beq	$t0,	5,	function_5
 	beq	$t0,	6,	function_6
 	beq	$t0,	7,	function_7
+	beq	$t0,	8,	function_8
+	beq	$t0,	9,	function_9
 	beq	$t0,	10,	main.End
 	bne	$t0,	10,	main.SelectAgain	# use when select < 1 or select > 10
 	# add funtion base on 
@@ -321,7 +323,7 @@ primeArray.Add:
 
 # ===Function 4===
 function_4:
-	# print 's_result7' to console
+	# print 's_result4' to console
 	li	$v0,	4
 	la	$a0,	s_result4
 	syscall
@@ -406,7 +408,7 @@ isPerfect.True:
 
 # ===Function 5===
 function_5:
-	# print 's_result7' to console
+	# print 's_result5' to console
 	li	$v0,	4
 	la	$a0,	s_result5
 	syscall
@@ -487,7 +489,7 @@ isSquare.Return1:
 
 # ===Function 6===
 function_6:
-	# print 's_result7' to console
+	# print 's_result6' to console
 	li	$v0,	4
 	la	$a0,	s_result6
 	syscall
@@ -630,3 +632,45 @@ max.NextNumber:
 	j max.ScanArray
 # ===End of Find max===
 
+# ===Function 8===
+function_8:
+	# print 's_result8' to console
+	li	$v0,	4
+	la	$a0,	s_result8
+	syscall
+	
+	li	$v0,	4
+	la	$a0,	s_resultX
+	syscall
+	# selectionSort
+	
+	# insert new line
+	li	$v0, 4
+	la	$a0, s_newLine
+	syscall
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of Function 8===
+
+
+# ===Function 9===
+function_9:
+	# print 's_result9' to console
+	li	$v0,	4
+	la	$a0,	s_result9
+	syscall
+	
+	li	$v0,	4
+	la	$a0,	s_resultX
+	syscall
+	# bubbleSort
+	
+	# insert new line
+	li	$v0, 4
+	la	$a0, s_newLine
+	syscall
+	
+	# jump back to selection in menu
+	j	main.Select
+# ===End of Function 9===
